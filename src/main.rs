@@ -8,6 +8,7 @@ enum Type {
     Obstruction
 }
 
+#[derive(PartialEq)]
 enum Direction {
     North,
     South,
@@ -50,10 +51,19 @@ fn main() {
         y: 0,
         c: 'g',
         t: Type::Guard,
-        d: Direction::Nul,
+        d: Direction::North,
         v: false
     };
-    
+
+    let mut guard_start = Coordinate {
+        x: 0,
+        y: 0,
+        c: 'g',
+        t: Type::Guard,
+        d: Direction::North,
+        v: false
+    };
+        
     // load the grid
     let mut y: i32 = 0;
     for row in lines {
@@ -70,34 +80,11 @@ fn main() {
             };
             
             let mut guard_loc = false;
-            let mut dir = Direction::Nul;
             match col {
                 '.' => loc.t = Type::Open,
                 '#' => loc.t = Type::Obstruction,
                 '^' => {
                     loc.t = Type::Open;
-                    dir = Direction::North;
-                    loc.c = '.';
-                    guard_loc = true;
-                    loc.v = true;
-                },
-                '>' => {
-                    loc.t = Type::Open;
-                    dir = Direction::West;
-                    loc.c = '.';
-                    guard_loc = true;
-                    loc.v = true;
-                },
-                'v' => {
-                    loc.t = Type::Open;
-                    dir = Direction::South;
-                    loc.c = '.';
-                    guard_loc = true;
-                    loc.v = true;
-                },
-                '<' => {
-                    loc.t = Type::Open;
-                    dir = Direction::East;
                     loc.c = '.';
                     guard_loc = true;
                     loc.v = true;
@@ -109,24 +96,23 @@ fn main() {
 
             // set the guard
             if guard_loc {
-                guard = Coordinate {
-                    x: x as i32,
-                    y: y,
-                    t: Type::Guard,
-                    c: 'g',
-                    d: dir,
-                    v: false
-                };
+                guard.x = x as i32;
+                guard.y = y;
+                
+                guard_start.x = x as i32;
+                guard_start.y = y;
             }
         }
         y += 1;
         y_bound = y;
     }
-   
-    let mut part1_sum = 1; // start at 1 for the first location the guard visited, it's starting
-    // location
+
+    let mut part1_sum = 1; // start at 1 for the first location the guard visited, the start
+    let mut part2_sum = 0;
+
+    // part1
     loop {
-        println!("Guard Loc: {}, {}", guard.x, guard.y);
+        //println!("Guard Loc: {}, {}", guard.x, guard.y);
         let moved: bool;
         let escaped: bool;
         (guard, grid, moved, escaped) = move_guard(guard, grid, x_bound, y_bound);
@@ -143,12 +129,93 @@ fn main() {
         }
 
         if escaped {
-            println!("Guard Escaped!");
+            //println!("Guard Escaped!");
             break;
         }
     }
 
-    println!("part1_sum: {part1_sum}");
+    //part2
+    
+    // start placing Obstructions
+    let grid_length = grid.len();
+    let mut guard2 = Coordinate {
+        x: guard_start.x,
+        y: guard_start.y,
+        d: Direction::North,
+        c: 'g',
+        t: Type::Guard,
+        v: false
+    };
+
+    for index in 0..grid_length {
+        print!("\x1B[2J\x1B[1;1H");
+        println!("{}/{}", index+1, grid_length);
+        //reset the guard
+        guard.x = guard_start.x;
+        guard.y = guard_start.y;
+        guard.d = Direction::North;
+
+        guard2.x = guard_start.x;
+        guard2.y = guard_start.y;
+        guard2.d = Direction::North;
+
+        if !grid[index].v {
+            continue;
+        }
+        
+        if grid[index].t == Type::Obstruction {
+            //println!("Skipping obstruction already at x: {} y: {}", grid[index].x, grid[index].y);
+            continue;
+        }
+
+        if grid[index].x == guard_start.x && grid[index].y == guard_start.y {
+            //println!("Skipping guard start location!");
+            continue;
+        }
+
+        if grid[index].t == Type::Open { // open spot
+            grid[index].t = Type::Obstruction; // add Obstruction
+        }
+
+        loop {
+            //println!("Guard Loc: {}, {}", guard.x, guard.y);
+            let mut escaped: bool;
+            (guard, grid, _, escaped) = move_guard(guard, grid, x_bound, y_bound);
+
+            if escaped {
+                break;
+            }
+            //println!("Guard Loc: {}, {}", guard.x, guard.y);
+
+            (guard2, grid, _, escaped) = move_guard(guard2, grid, x_bound, y_bound);
+            
+            if escaped {
+                break;
+            }
+
+            //println!("Guard 2 Loc: {}, {}", guard2.x, guard2.y);
+
+            (guard2, grid, _, escaped) = move_guard(guard2, grid, x_bound, y_bound);
+
+            if escaped {
+                break;
+            }
+
+            //println!("Guard 2 Loc: {}, {}", guard2.x, guard2.y);
+
+            // check for loop 
+            if guard.x == guard2.x && guard.y == guard2.y && guard.d == guard2.d {
+                part2_sum += 1;
+                break;
+            }
+        }
+
+        // set the grid type back to open
+        grid[index].t = Type::Open;
+    }
+
+    println!("part1 sum: {part1_sum}");
+    println!("part2 sum: {part2_sum}");
 }
 
 fn move_guard(mut guard: Coordinate, grid: Vec<Coordinate>, x_bound: i32, y_bound: i32) -> (Coordinate, Vec<Coordinate>, bool, bool) {
