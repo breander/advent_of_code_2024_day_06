@@ -148,8 +148,8 @@ fn main() {
     };
 
     for index in 0..grid_length {
-        print!("\x1B[2J\x1B[1;1H");
-        println!("{}/{}", index+1, grid_length);
+        //print!("\x1B[2J\x1B[1;1H");
+        //println!("{}/{}", index+1, grid_length);
         //reset the guard
         guard.x = guard_start.x;
         guard.y = guard_start.y;
