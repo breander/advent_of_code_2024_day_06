@@ -249,7 +249,7 @@ fn move_guard(mut guard: Coordinate, grid: Vec<Coordinate>, x_bound: i32, y_boun
     }
 
     // get the Coordinate of the location to move to
-    let loc_to_move_to = grid.iter().find(|l| l.x == x && l.y == y).unwrap();
+    let loc_to_move_to = &grid[((y * x_bound) + x) as usize];
 
     if loc_to_move_to.t == Type::Obstruction {
         // guard hits Obstruction and changes direction to the right
